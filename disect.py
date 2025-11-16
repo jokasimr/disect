@@ -127,7 +127,7 @@ def set_contains_bad_dependency(to_unpin):
 
     print(f"\nNext step:")
     print(f"  Apply and test these dependencies with your environment tool (example):")
-    print(f"      uv run --requirements {new_dependencies_path}\n")
+    print(f"      uv run --with-requirements {os.path.abspath(new_dependencies_path)}\n")
     print("When your test completes, report the result:")
     print(f"      disect {good_dependencies_path} {new_dependencies_path} good    # if the test succeeded")
     print(f"      disect {good_dependencies_path} {new_dependencies_path} bad     # if the test failed")
