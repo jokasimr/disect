@@ -12,7 +12,8 @@ chmod u+x $HOME/.local/bin/disect
 
 ## Usage
 
-`$ disect --help`
+```
+$ disect --help
 
 disect is a program that helps you find what dependencies caused a regression.
 It minimizes the number of environments that needs to be tested by leveraging combinatorical group testing.
@@ -29,3 +30,4 @@ Commands:
   start        Begin a dependency bisect session
   good         Mark the last test result as good
   bad          Mark the last test result as bad
+```
