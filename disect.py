@@ -87,7 +87,7 @@ if sys.argv[3] == 'start':
         print("Specify if it is good or bad by passing the argument 'good' or 'bad'.")
         sys.exit(1)
 
-    replay_state = [False]
+    replay_state = []
 else:
     if not os.path.isfile(new_dependencies_path):
         print("The new dependency file does not exists.")
@@ -123,7 +123,15 @@ def set_contains_bad_dependency(to_unpin):
         name: None if name in to_unpin else version
         for name, version in dependencies.items()
     }
+    if all(version is None for version in dependencies.values()):
+        # If all dependencies are unpinned we know the bug is present
+        return False
     write_dependency_list(new_dependencies_path, new_dependencies, replay_state)
+
+    print("Now unpinning", len(to_unpin), '/', sum(1 for version in dependencies.values() if version is not None), 'dependencies')
+
+    minimum_remaining_tests = estimate_remaining()
+    print("Minimum remaining tests:", minimum_remaining_tests - len(replay_state))
 
     print(f"\nNext step:")
     print(f"  Apply and test these dependencies with your environment tool (example):")
@@ -133,6 +141,33 @@ def set_contains_bad_dependency(to_unpin):
     print(f"      disect {good_dependencies_path} {new_dependencies_path} bad     # if the test failed")
     sys.exit()
  
+
+def estimate_remaining():
+    tc = 0
+    unpinned_has_been_one = False
+    def counter(unpinned):
+        nonlocal tc, unpinned_has_been_one
+        tc += 1
+        index = tc - 1
+        unpinned_has_been_one |= len(unpinned) == 1
+
+        if len(replay_state) > index:
+            is_good_state = replay_state[index]
+            # Return True if the state is bad.
+            return not is_good_state
+
+        if not unpinned_has_been_one:
+            # Assume every state is bad before on dependency
+            # had been isolated.
+            return True
+
+        # Assume every state is good after that point.
+        return False
+
+    options = {name for name, version in dependencies.items() if version is not None}
+    search(options, counter)
+    return tc
+
 
 bad_deps = search(
     {name for name, version in dependencies.items() if version is not None},
