@@ -1,45 +1,57 @@
 #!/bin/bash
 
 
-##### TEST 1 BAD DEPENDENCY
-rm -f tests/minimal-requirements.txt
-./disect.py tests/working-requirements.txt tests/minimal-requirements.txt start > /dev/null
+inname=tests/working-requirements.txt
+tmpname=tests/minimal-requirements.txt
 
-for i in `seq 16`
+##### TEST 1 BAD DEPENDENCY
+for package in ipykernel scipy anyio zipp webcolors
 do
-    
-    if grep -q 'ipykernel==' tests/minimal-requirements.txt
+    rm -f $tmpname
+    ./disect.py $inname $tmpname start > /dev/null
+
+    for i in `seq 16`
+    do
+        if grep -q "$package==" $tmpname
+        then
+            ./disect.py $inname $tmpname good > /dev/null
+        else
+            ./disect.py $inname $tmpname bad > /dev/null
+        fi
+    done
+
+    if ! grep -q "$package==" $tmpname \
+     || grep -qv "$package" $tmpname | grep "=="
     then
-        ./disect.py tests/working-requirements.txt tests/minimal-requirements.txt good > /dev/null
-    else
-        ./disect.py tests/working-requirements.txt tests/minimal-requirements.txt bad > /dev/null
+        echo "Test failed: One bad dep ($package)"
     fi
 done
-
-diff tests/minimal-requirements.txt.expected tests/minimal-requirements.txt
-if [ $? == 1 ]
-then
-    echo 'One bad dep test failed.'
-fi
 
 
 ##### TEST 2 BAD DEPENDENCIES
-rm -f tests/minimal-requirements.txt
-./disect.py tests/working-requirements.txt tests/minimal-requirements.txt start > /dev/null
-
-for i in `seq 26`
+for package1 in ipykernel scipy
 do
-    if grep -q 'ipykernel==' tests/minimal-requirements.txt \
-    && grep -q 'Jinja2==' tests/minimal-requirements.txt
+for package2 in anyio zipp webcolors
+do
+    rm -f $tmpname
+    ./disect.py $inname $tmpname start > /dev/null
+
+    for i in `seq 21`
+    do
+        if grep -q "$package1==" $tmpname \
+        && grep -q "$package2==" $tmpname
+        then
+            ./disect.py $inname $tmpname good > /dev/null
+        else
+            ./disect.py $inname $tmpname bad > /dev/null
+        fi
+    done
+
+    if ! grep -q "$package1==" $tmpname \
+     || ! grep -q "$package2==" $tmpname \
+     || grep -v -e "$package1" -e "$package2" $tmpname | grep -q "=="
     then
-        ./disect.py tests/working-requirements.txt tests/minimal-requirements.txt good > /dev/null
-    else
-        ./disect.py tests/working-requirements.txt tests/minimal-requirements.txt bad > /dev/null
+        echo "Test failed: Two bad dep ($package1, $package2)"
     fi
 done
-
-diff tests/minimal-requirements.txt.two_bad.expected tests/minimal-requirements.txt
-if [ $? == 1 ]
-then
-    echo 'Two bad deps test failed.'
-fi
+done

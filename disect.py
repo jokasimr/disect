@@ -103,10 +103,14 @@ def search(options, contains):
         return options
     first = set(sorted(options)[:len(options)//2])
     second = options - first
-    return (
-        (search(first, contains) if contains(first) else set()) |
-        (search(second, contains) if contains(second) else set())
-    )
+    if contains(first):
+        return (
+            search(first, contains) |
+            (search(second, contains) if contains(second) else set())
+        )
+    # Optimization: Assuming the options contains at least one bad entry,
+    # if the first part does not contain the bad entry, the second part must.
+    return search(second, contains)
 
 
 times_called = 0
@@ -124,9 +128,6 @@ def set_contains_bad_dependency(to_unpin):
         name: None if name in to_unpin else version
         for name, version in dependencies.items()
     }
-    if all(version is None for version in dependencies.values()):
-        # If all dependencies are unpinned we know the bug is present
-        return False
     write_dependency_list(new_dependencies_path, new_dependencies, replay_state)
 
     print("Now unpinning", len(to_unpin), '/', sum(1 for version in dependencies.values() if version is not None), 'dependencies')
