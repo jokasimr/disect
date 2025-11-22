@@ -4,24 +4,30 @@
 inname=tests/working-requirements.txt
 tmpname=tests/minimal-requirements.txt
 
+
 ##### TEST 1 BAD DEPENDENCY
 for package in ipykernel scipy anyio zipp webcolors
 do
     rm -f $tmpname
     ./disect.py $inname $tmpname start > /dev/null
 
-    for i in `seq 16`
+    for i in `seq 14`
     do
-        if grep -q "$package==" $tmpname
+        if \
+            if grep -q "$package==" $tmpname
+            then
+                ./disect.py $inname $tmpname good
+            else
+                ./disect.py $inname $tmpname bad
+            fi \
+          | grep -q 'bisection complete'
         then
-            ./disect.py $inname $tmpname good > /dev/null
-        else
-            ./disect.py $inname $tmpname bad > /dev/null
+            break
         fi
     done
 
     if ! grep -q "$package==" $tmpname \
-     || grep -qv "$package" $tmpname | grep "=="
+     || grep -v "$package" $tmpname | grep -q "=="
     then
         echo "Test failed: One bad dep ($package)"
     fi
@@ -38,12 +44,17 @@ do
 
     for i in `seq 21`
     do
-        if grep -q "$package1==" $tmpname \
-        && grep -q "$package2==" $tmpname
+        if \
+            if grep -q "$package1==" $tmpname \
+            && grep -q "$package2==" $tmpname
+            then
+                ./disect.py $inname $tmpname good
+            else
+                ./disect.py $inname $tmpname bad
+            fi \
+          | grep -q 'bisection complete'
         then
-            ./disect.py $inname $tmpname good > /dev/null
-        else
-            ./disect.py $inname $tmpname bad > /dev/null
+            break
         fi
     done
 
