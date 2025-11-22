@@ -181,6 +181,6 @@ write_dependency_list(
         name: version if name in bad_deps else None
         for name, version in dependencies.items()
     },
-    replay_state,
+    replay_state[:-1],
 )
 print("Dependency bisection complete.")
